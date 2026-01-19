@@ -1,0 +1,9 @@
+﻿lib
+include
+Project2.vcxproj.user
+Project2.vcxproj
+Project2.vcxproj.filters
+Project2.sln
+x64
+.idea
+.vs
