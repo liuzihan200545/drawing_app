@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iostream>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
 constexpr int WIDTH = 900;
 constexpr int HEIGHT = 600;
@@ -92,11 +93,34 @@ void bresenham(SDL_Surface* surface, int x0, int y0, int x1, int y1) {
     }
 }
 
+void draw_text(SDL_Surface* surface, int x, int y, const std::string& text, SDL_Color color, TTF_Font *font)
+{
+    SDL_Surface* text_surface = TTF_RenderUTF8_Blended(font, text.c_str(), color);
+    if (!text_surface)
+    {
+        return;
+    }
+    SDL_Rect dst;
+    dst.x = x;
+    dst.y = y;
+    dst.w = text_surface->w;
+    dst.h = text_surface->h;
+    SDL_BlitSurface(text_surface,nullptr,surface,&dst);
+    SDL_FreeSurface(text_surface);
+}
+
+void draw_rect(SDL_Surface* surface, int x, int y, int width ,int height, uint32_t color)
+{
+    SDL_Rect color_rect = {x,y,width,height};
+    SDL_FillRect(surface,&color_rect,color);
+}
+
 int main(void)
 {
     bool done = false;
     
     SDL_Init(SDL_INIT_VIDEO);
+    TTF_Init();
     
     SDL_Window *window = SDL_CreateWindow("ULTRA PAINT",100,100,WIDTH,HEIGHT,0);
     
@@ -104,13 +128,20 @@ int main(void)
     
     float delay_millis = 1000.0f * (1.0f / TARGET_FPS);
     
-    bool draw = false;
     int x = 0;
     int y = 0;
     
     draw_palette(surface,color_palette,std::size(color_palette));
     SDL_UpdateWindowSurface(window);
     
+    TTF_Font* font = TTF_OpenFont("C:/Windows/Fonts/consola.ttf",18);
+    if (!font)
+    {
+        std::cerr << TTF_GetError() << '\n';
+    }
+    
+    SDL_Color white = {255, 255, 255, 255};
+
     while (!done)
     {
         SDL_Event event;
@@ -144,8 +175,9 @@ int main(void)
                     y_last = y;
                     break;
                 case SDL_MOUSEWHEEL:
-                    brush_size = std::max(brush_size, 4);
                     brush_size += event.wheel.y;
+                    brush_size = std::max(brush_size, 4);
+                    brush_size = std::min(brush_size, 30);
                     break;
                 case SDL_KEYDOWN:
                     if (event.key.keysym.sym == SDLK_TAB)
@@ -162,14 +194,22 @@ int main(void)
             }
         }
 
+        char info[64];
+        _snprintf_s(info, sizeof(info), "Brush size: %d", brush_size);
+        
+        draw_rect(surface, std::size(color_palette) * COLOR_RECT_SIZE + 20,0,WIDTH - (std::size(color_palette) * COLOR_RECT_SIZE + 20),COLOR_RECT_SIZE,0x000000 );
+        draw_text(surface, std::size(color_palette) * COLOR_RECT_SIZE + 20, COLOR_RECT_SIZE/2 - 18/2, info, white, font);
+
         draw_palette(surface,color_palette,std::size(color_palette));
         SDL_UpdateWindowSurface(window);
         
         SDL_Delay(static_cast<uint32_t>(delay_millis));
         
     }
+    SDL_FreeSurface(surface);
     SDL_DestroyWindow(window);
+    TTF_Quit();
     SDL_Quit();
-    return 0;
+    return 0; 
 }
 
